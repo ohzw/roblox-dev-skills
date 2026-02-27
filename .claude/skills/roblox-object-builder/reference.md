@@ -48,7 +48,6 @@ Rules:
 - Keep adjacent large-surface contrast >= 30 RGB on at least one channel
 
 ## 3. Shape Language
-- [ ] Rounded/chamfered corners as default
 - [ ] Silhouette readable from top + oblique view
 - [ ] Hero props use layered anatomy (base/body/accent)
 - [ ] Avoid symbolic primitives (single sphere/box pretending to be complex props)
@@ -136,7 +135,6 @@ Rules:
 
 ## 3. Shape Language
 
-- [x] Rounded first: cylinder/ball blends over hard rectangular blocks
 - [x] Hero props use layered structure (base/body/accent)
 - [x] Arch must show clear through-opening (negative space)
 - [x] Flower must include planter or stem, not sphere ring only

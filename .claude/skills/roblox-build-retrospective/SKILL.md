@@ -33,13 +33,28 @@ from build sessions and writes validated findings into the builder skill's docs.
 
 ```
 roblox-object-builder/
-├── SKILL.md              ← Code Patterns, Project Strategy, Scale Practices
-├── docs/gotchas.md       ← Technical pitfalls
-├── docs/design-wisdom.md ← Design knowledge
-└── docs/csg-guide.md     ← CSG practices
+├── SKILL.md              ← Anti-patterns, Roblox-specific gotchas summary
+├── docs/build-log.md     ← Specific incidents (PRIMARY output target)
+├── docs/gotchas.md       ← Universal technical pitfalls (promoted from build-log)
+├── docs/design-wisdom.md ← Roblox-specific rendering/material behavior
+└── docs/csg-guide.md     ← CSG decision flow and safe practices
 ```
 
 Path: `.claude/skills/roblox-object-builder/`
+
+### Output flow
+
+```
+Finding → build-log.md (always)
+                ↓
+        Abstraction Check passes + HIGH confidence?
+                ↓ YES
+        gotchas.md or SKILL.md (promote abstract rule only)
+```
+
+Specific incidents, object-specific details, and orientation tables stay in
+build-log.md permanently. Only abstract rules that pass the Abstraction Check
+get promoted to the AI-facing docs.
 
 ---
 
@@ -121,49 +136,48 @@ Evaluate any Open questions from Phase 1 against this session's evidence.
 
 ### Phase 4: Knowledge Integration
 
-For each HIGH/MEDIUM finding:
+**Step 1: Write ALL findings to build-log.md**
 
-1. Verify it passes the Phase 3 Abstraction Check
-2. Read target file, check for duplicates
-3. Duplicate exists → update/strengthen. New → add in appropriate section.
-4. Write using Edit tool, show diff to user
+Every finding goes to `docs/build-log.md`, regardless of confidence level.
+Include: date, build subject, incident, category tag, what was learned.
+Object-specific details (orientation tables, exact dimensions, code snippets
+for that specific object) belong here permanently.
 
-#### Writing Rules
+**Step 2: Promote abstract rules (HIGH confidence only)**
 
-**WHAT TO WRITE — process knowledge that transfers across objects:**
+For each HIGH confidence finding, apply the Abstraction Check:
 
-- **Structural conditions:** Under what circumstances does the problem occur?
-  (e.g., "When two surfaces share the exact same world-space plane")
-- **Root mechanisms:** Why does it fail or succeed?
-  (e.g., "The GPU cannot determine draw order for co-planar faces")
-- **Process-level remedies:** What steps prevent or fix the issue?
-  (e.g., "Offset the decorative part by +0.05 studs along the face normal")
-- **Decision criteria:** When to choose one approach over another?
-  (e.g., "If the real-world surface is concave → CSG. If flat → Block")
-
-**WHAT NOT TO WRITE — object-specific recipes that limit AI reasoning:**
-
-- **Code snippets for specific objects.** "Sink CSG code", "stove recess code", etc.
-  The AI will copy-paste without thinking. When it encounters an object not covered
-  by a snippet, it defaults to "no pattern found → skip", degrading general capability.
-- **Rules that depend on object names.** "Use CSG for kitchen sinks" fires only in
-  kitchens. "Use CSG for concave surfaces" fires everywhere.
-- **Hardcoded dimensions.** "Sink cutter should be 3.5 x 2 x 4.2" — the AI can
-  determine sizes on its own. Only constrain with **relative rules** like "cutter
-  must exceed target by +2 studs on each axis".
-
-**Litmus test when in doubt:**
-
-> "Would an AI reading this entry benefit from it when building a completely
+> "Would an AI reading this rule benefit from it when building a completely
 > different object?"
 >
-> YES → write it.  NO → raise the abstraction level and rewrite.
+> YES → promote to gotchas.md or SKILL.md.
+> NO → stays in build-log.md only.
 
-Additional:
-- Match existing file voice/structure
-- Frame as what to DO, not just what went wrong
-- Contradictions → flag for user review
-- Update `last-validated` date on new/updated/confirmed entries
+When promoting:
+
+1. Read target file, check for duplicates
+2. Duplicate exists → update/strengthen. New → add in appropriate section.
+3. Write using Edit tool, show diff to user
+
+**What goes into AI-facing docs (gotchas.md, SKILL.md):**
+
+- Structural conditions: under what circumstances does the problem occur?
+- Root mechanisms: why does it fail?
+- Process-level remedies: what prevents or fixes it?
+
+**What stays in build-log.md only:**
+
+- Object-specific code snippets ("sink CSG code", "stove recess code")
+- Rules that depend on object names ("Use CSG for kitchen sinks")
+- Hardcoded dimensions ("cutter should be 3.5 x 2 x 4.2")
+- Prescriptive process rules ("always use 3-phase", "always use data tables")
+
+**Guard against over-constraining the builder skill:**
+
+The builder SKILL.md uses anti-patterns ("don't do X") rather than prescriptions
+("do X"). When writing a new rule, frame it as what to AVOID. If it can only be
+stated as "always do X", question whether the AI needs that instruction or can
+figure it out on its own. If the AI can figure it out → don't write it.
 
 ### Phase 5: Session Log
 
@@ -206,15 +220,18 @@ Open questions: [LOW confidence items for future validation]
 4. **Bloat check**: docs > 300 lines → consider reorganizing or extracting.
 5. **Abstraction audit**: Scan all skill files for object-specific snippets or hardcoded
    dimensions that have crept in. Rewrite to process-level or delete.
-6. **Staleness**: `last-validated` > 3 sessions old → report to user (do NOT auto-delete).
+6. **Anti-pattern audit**: Check if any rule in SKILL.md is prescriptive ("do X") rather
+   than avoidance-oriented ("don't do X"). Prescriptive rules constrain AI reasoning —
+   flag for user review or reframe as anti-patterns.
+7. **Staleness**: `last-validated` > 3 sessions old → report to user (do NOT auto-delete).
 
 ---
 
 ## Principles
 
-- **Write process, not recipes**: Skills build AI judgment. Teaching how to build a specific
-  object makes the AI copy instead of think, degrading its ability to handle novel objects.
-  Write "under what conditions, why, and how to decide". Never write "what to build and how".
+- **Write anti-patterns, not prescriptions**: Skills should tell AI what to AVOID, not what
+  to DO. Teaching "how to build" makes the AI follow steps instead of think. Teaching "what
+  fails and why" preserves AI judgment while preventing known bugs. When in doubt, don't write it.
 - **Don't over-generalize**: "CSG fails when overlap < 2 studs" not "CSG always fails"
 - **Don't over-specify**: "Use CSG for kitchen sinks" only fires in kitchens.
   "Use CSG for concave surfaces" fires everywhere. Always prefer the latter.

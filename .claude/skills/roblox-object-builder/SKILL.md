@@ -18,8 +18,6 @@ description: >
 
 ## MCP Tools
 
-Use any available `mcp__roblox__*` tools as needed. Common ones:
-
 | Tool | Purpose |
 |------|---------|
 | `mcp__roblox__run_code` | Execute Lua code (create, modify, verify) |
@@ -29,185 +27,103 @@ Use any available `mcp__roblox__*` tools as needed. Common ones:
 
 ---
 
-## Code Patterns
+## Anti-Patterns
 
-These patterns apply to **every build** regardless of project strategy or scale.
+Known failure modes. Avoid these on every build.
 
-### Relative CFrame Pattern (mandatory for 2+ related parts)
+### Don't hardcode absolute coordinates for sub-components
 
-All sub-component positions MUST be computed relative to a parent part's CFrame.
-Never hardcode absolute world coordinates for sub-components.
+All sub-component positions MUST be relative to a parent part's CFrame.
+Hardcoded world coordinates break when the parent moves or resizes, and
+cause cumulative drift across multiple `run_code` calls.
 
 ```lua
--- WRONG: absolute coordinates — breaks when parent moves or resizes
+-- WRONG
 local doorCF = CFrame.new(10, 3.5, 5)
 
--- CORRECT: relative to parent
-local wall = model:FindFirstChild("Wall_Front")
+-- RIGHT
 local doorCF = wall.CFrame * CFrame.new(0, -wall.Size.Y/4, 0)
 ```
 
-This is non-negotiable. A 10-part gate and a 200-part lobby prop both use this pattern.
+### Don't build block-only compositions
 
-### Skeleton-Detail-Verify (SDV) Pattern (recommended for 10+ part objects)
+If the real-world object has curves, recesses, or holes — represent them.
+Before coding, list: "Where in this object are curves, recesses, or holes?"
+Use CSG (SubtractAsync/UnionAsync), Cylinders, or Spheres to represent them.
 
-Three-phase build pattern validated across 5 rounds of A/B testing. The only approach
-that achieved zero orientation errors.
+A chair needs seat curvature or armrest shape. A planter needs a rim.
+A light fixture needs a shade profile. Flat rectangular blocks for everything
+reads as placeholder geometry, not a finished build.
 
-**Phase 1 — Skeleton (ONE `run_code` call)**
+### Don't avoid CSG
 
-Create all major anchor parts with correct positions, sizes, AND orientations.
-Include an axis convention comment:
-
-```
--- Player at -Z | Monitor faces -Z | Keyboard long axis = X | Mouse long axis = Z, buttons -Z
-```
-
-**Phase 2 — Detail (multiple `run_code` calls)**
-
-Read existing anchors via `FindFirstChild`, position relative to them:
+CSG is essential for quality. Use it freely with these safety rules:
 
 ```lua
-local anchor = model:FindFirstChild("Desk_Top")
-local kbCF = anchor.CFrame * CFrame.new(-1.5, anchor.Size.Y/2 + 0.15, -1.0)
+local ok, result = pcall(function()
+    return base:SubtractAsync({cutter})
+end)
+if ok and result:IsA("BasePart") then
+    result.CFrame = base.CFrame  -- copy FULL CFrame, never position-only
+    result.UsePartColor = true
+    result.Color = desiredColor
+    result.Anchored = true
+    result.Name = base.Name
+    result.Parent = base.Parent
+    base:Destroy()
+end
+cutter:Destroy()  -- always clean up cutters
 ```
 
-**Phase 3 — Verification (ONE `run_code` call)**
+See [docs/csg-guide.md](docs/csg-guide.md) for decision flow and details.
 
-Run automated checks. See [docs/verification.md](docs/verification.md) for template.
-Checks: position drift, leaked cutters, orientation, overlap, anchoring, part counts.
+### Don't mass-produce before quality-checking one instance
 
-**Why SDV works where other approaches fail:**
+When placing multiple copies (chairs, lights, trees), build one exemplar first.
+Verify its shape reads as the intended object. Then clone with variation.
 
-| Approach | Spatial | Detail | Orientation |
-|----------|---------|--------|-------------|
-| OneShot (1 call) | Best | Shallow | Unreliable |
-| Stepwise (6+) | Worst | Deep | Unreliable |
-| **SDV** | **Good** | **Good** | **Reliable** |
+### Don't forget anchoring
 
-### CSG Pattern
-
-For any build involving Union/Subtract operations:
-
-1. **Y-stack plan first**: Write full height stack as comments BEFORE any code
-2. **pcall + TriangleCount**: Always check `TriangleCount > 0` after CSG ops
-3. **CFrame copy**: `result.CFrame = originalPart.CFrame` — never position-only
-4. **Color fix**: `result.UsePartColor = true` + `result.Color = desiredColor`
-
-```lua
--- Y-stack plan (REQUIRED before coding tiered structures)
--- Plaza top: Y = PLAZA_TOP | Basin walls: top = PLAZA_TOP + WALL_H (keep <= 0.5)
--- Water: Y = PLAZA_TOP + WALL_H * 0.75 | Rim: Y = PLAZA_TOP + WALL_H + 0.5
-```
-
-See [docs/csg-guide.md](docs/csg-guide.md) for full CSG decision flow.
+`Anchored` defaults to `false`. Set `true` on all structural and decorative parts.
 
 ---
 
-## Project Strategy
+## Roblox-Specific Gotchas
 
-Choose based on **user intent**, not part count. Both strategies use the same Code Patterns above.
-
-### Interactive
-
-When: design is uncertain, user wants to iterate, visual feedback is needed.
-
-1. Verbalize shape decomposition (and CSG plan if applicable) before coding
-2. Place base shapes → ask user for visual confirmation
-3. Apply details, materials, finishing → confirm again
-
-Pause for user confirmation at each major step. You cannot visually verify 3D space.
-
-### Autonomous
-
-When: design is clear, user wants a complete result without interruption.
-
-1. **Declare full design** — zone layout, flow, color palette
-2. **Style reference sheet** (if style-heavy) — silhouette keywords, material rules, accent ratio, contrast anchors
-3. **Build without pausing** — report briefly per area, then continue
-4. **Verify and report** at end
-
-Do NOT pause for user confirmation at every phase.
-
----
-
-## Scale Practices
-
-Supplementary guidance based on build size. Combine with any Project Strategy.
-
-### Small (< ~30 parts)
-
-- 1-3 `run_code` calls sufficient
-- SDV Pattern optional but recommended if the object has distinct sub-assemblies
-- Simple folder hierarchy (one Model with PrimaryPart)
-
-### Medium (~30-150 parts)
-
-- SDV Pattern strongly recommended
-- **Data tables + `makePart` helpers** for repetitive elements
-- **Sub-folder hierarchy** per object type (Trees/, Benches/, Lamps/)
-- Redeclare helpers every `run_code` call (MCP is stateless)
-
-### Large (> ~150 parts)
-
-All Medium practices, plus:
-
-- **Build by area** — Foundation → Buildings → Zones → Details → Atmosphere
-- **Exemplar-then-clone** — build one high-quality instance per prop type, verify, replicate with variation. Prevents "Lost in the Middle" quality degradation.
-- **Use SDV for individual hero props within the map** — a fountain inside a lobby gets its own skeleton-detail-verify cycle
-- **Free addition slots** (2-3) — room for thematically appropriate elements discovered during build
-- **Uniform quality audit** — category <70% of max category's per-prop part count → rebuild
-- **Performance budget** — target <1000 parts for lobby; use `CastShadow = false` on decorative parts
-
----
-
-## Primitive Selection Default
-
-**Block-first** unless user requests rounded/organic forms.
-
-Block → WedgePart/CornerWedgePart → limited Cylinder → Sphere (accent-only)
-
-Exception: Japanese temple/pagoda/shrine roofs require WedgePart eaves (see [docs/design-wisdom.md](docs/design-wisdom.md)).
-If relaxing Block-first, state why explicitly.
-
----
-
-## Critical Gotchas
-
-Full details with code examples: [docs/gotchas.md](docs/gotchas.md)
+Things AI training data won't reliably cover.
 
 | Gotcha | Rule |
 |--------|------|
 | Cylinder axis | `Size = (length, dia, dia)`. Upright: `Angles(0, 0, π/2)`. Height = `Size.X` after rotation. |
 | Position = BB center | Floor at Y=0 → `Pos.Y = Size.Y / 2` |
-| CSG silent failure | `pcall` + check `TriangleCount > 0` |
-| CSG color | `UsePartColor = true` + `Color` after every CSG op |
-| CSG CFrame | Copy `originalPart.CFrame` — never reconstruct from position alone |
-| Anchored | Defaults to `false`. Set `true` on all structural parts. |
+| CSG silent failure | `pcall` + verify result is BasePart with geometry |
+| CSG color bleed | `UsePartColor = true` + `Color` after every CSG op |
+| CSG CFrame reset | Copy full `CFrame` — `CFrame.new(x,y,z)` resets rotation to identity |
 | SpawnLocation | Auto-detected for respawning. Set `Neutral = false` or `Transparency = 1`. |
-| Constraints | Cannot meet user constraint → ask, never silently break |
-| Seated furniture facing | `LookVector` = **backrest** direction; the person faces `-LookVector`. Use `CFrame.lookAt(pos, awayFromTarget)` to face toward target. |
+| Neon emits no light | Pair with `PointLight` / `SpotLight` for actual illumination |
+| MCP stateless | Redeclare helpers & re-acquire references every `run_code` call |
+
+Full details with code examples: [docs/gotchas.md](docs/gotchas.md)
 
 ---
 
 ## Scale Reference
 
 ```
-Player: ~5 studs | Door: 4w × 7h | Ceiling: 10-14 (corridor/personal), 16+ (4+ occupant room) | Hall: 20-35
+Player: ~5 studs | Door: 4w × 7h | Ceiling: 10-14 (small), 16+ (4+ person room) | Hall: 20-35
 Corridor: 6-8w | Neon thickness: 0.1-0.4
-Map: 10p ~150² | 20p ~250² | 30p ~350² | Buildings: 30-90h (vary for skyline)
 ```
 
 ---
 
 ## Post-Build Gate
 
-Run before reporting completion on **every build**, regardless of strategy or scale.
+Run before reporting completion.
 
-1. **Geometry**: Paths >= 90% of ground size. Furniture facing: `-LookVector · toCenter > 0`. No large surface all RGB > 225. Adjacent surfaces differ >= 30 in one channel. **Floor penetration**: for every leg/column, verify `bottom_Y >= floorTop` (bottom ≥ floor surface — never below).
-2. **Readability**: Hero props recognizable in <1s at oblique view. Layered anatomy (base + body + accent), not symbolic primitives.
-3. **CSG quota** (rounded/ornamental themes): >= 1 intentional CSG feature. Log reason if skipped.
-4. **Verification**: Run [docs/verification.md](docs/verification.md) checks (position drift, leaked cutters, orientation, overlap, anchoring, part counts).
+1. **Shape quality**: Every placed object recognizable at a glance. No object is just rectangular blocks if the real-world version has curves, recesses, or distinctive silhouette features.
+2. **CSG check**: At least 1 intentional CSG feature for any build with furniture, architecture, or decorative elements. If zero, list where curves/recesses were skipped and reconsider.
+3. **Technical**: All parts anchored. No leaked CSG cutters in workspace. No floor penetration (`bottom_Y >= floor surface`).
+4. **Color/material**: Adjacent large surfaces differ visibly. No large surface has all RGB channels > 225.
 
 ---
 
@@ -217,8 +133,8 @@ Read when relevant, not every time.
 
 | File | When to read |
 |------|-------------|
-| [reference.md](reference.md) | Style-heavy builds (pastel/cute/sci-fi) |
-| [docs/design-wisdom.md](docs/design-wisdom.md) | Map layouts, color rules, detail patterns |
-| [docs/csg-guide.md](docs/csg-guide.md) | CSG decisions, safe practices, minimums |
+| [docs/csg-guide.md](docs/csg-guide.md) | CSG decisions, safe practices |
 | [docs/gotchas.md](docs/gotchas.md) | Debugging or preventive reference |
+| [docs/design-wisdom.md](docs/design-wisdom.md) | Roblox-specific rendering/material behavior |
 | [docs/verification.md](docs/verification.md) | Post-build verification code template |
+| [reference.md](reference.md) | Style-heavy builds (pastel/cute/sci-fi) |
