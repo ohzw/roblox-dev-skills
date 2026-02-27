@@ -9,6 +9,115 @@ LOW confidence findings accumulate here until validated across sessions.
 
 <!-- New sessions are appended below this line -->
 
+## 2026-02-28 - SF Conference Room (SFスタイル・ロールプレイ用会議室)
+
+**Goal:** SFスタイル会議室（ロールプレイ系, 8〜12人, ホワイト+ネオンブルー）
+**Process:** roblox-design-consultant → Design Brief → roblox-object-builder (Autonomous)
+**Outcome:** PARTIAL — ビルド自体は技術的に成功（0ドリフト, 0 pcall失敗）、しかしユーザーが「スケールが小さかった」と報告
+
+| 項目 | 値 |
+|------|-----|
+| Parts | 136 |
+| Retries | 0 |
+| pcall failures | 0 |
+| Position drift | 0.00 studs |
+| Anchor leaks | 0 |
+| Scale feel | ❌ 希望より小さかった（天井 14 studs → ≥ 16 studs 必要） |
+
+**Key findings:**
+
+- Design-consultant の Player Scale Reference「天井高（室内）: 10〜14 studs」に
+  多人数閉鎖空間の例外がなく、Design Brief に 14 studs を指定してしまった。
+  design-wisdom.md には会議室 ≥ 16 studs ルールが存在するが design-consultant は参照できない。
+  (Design - RED - HIGH)
+- roblox-object-builder SKILL.md の Scale Reference「Ceiling: 10-14」も同様の矛盾を抱えていた。
+  (Process - RED - MEDIUM)
+- 椅子・テーブルの脚が床を貫通していた（スクリーンショットで確認）。
+  脚の高さが固定値で指定されており、「座面底 → 床上面」のギャップから算出されていなかった。
+  SDV の Relative CFrame は位置ズレを防いだが、サイズ計算には適用されなかった。
+  (Geometry - RED - HIGH)
+
+**Skill updates made:**
+
+- `roblox-design-consultant/SKILL.md`: Player Scale Reference に「4人以上の閉鎖空間: ≥ 16 studs」行を追加
+- `roblox-object-builder/SKILL.md`: Scale Reference の Ceiling を「10-14 (corridor/personal), 16+ (4+ occupant room)」に更新
+- `docs/gotchas.md`: 「Bridging parts penetrate floor when height is a constant」追加（脚高さは gap から算出する必須パターン）
+- `SKILL.md`: Post-Build Gate に「Floor penetration: leg bottom ≥ floorTop」チェックを追加
+
+**Open question resolution:**
+
+- "Does the room floor CFrame anchor approach reliably prevent position drift?"
+  → 0 drift confirmed this session. WEAKLY VALIDATED (approach not directly observed)
+- "Does elevating LookVector to SKILL.md's Critical Gotchas table change agent behavior?"
+  → No chair orientation complaints reported. STILL OPEN (not explicitly verified)
+
+**Open questions (LOW confidence - validate in future sessions):**
+
+- 天井高が ≥ 16 studs に修正された次回会議室で、ユーザーの「大きさ感」が改善されるか確認が必要。
+- Design-consultant が roblox-object-builder の design-wisdom.md を参照できないアーキテクチャ上の
+  限界がある。重複ルールの維持コストが増えるため、共通スケール参照の一元化を検討すべきか？
+
+## 2026-02-27 - Conference Room (企業シミュレーター向け中会議室)
+
+**Goal:** カジュアル・スタートアップ風の中会議室（8〜10人収容, ナチュラル×オレンジ, ガラス壁）
+**Process:** roblox-design-consultant → Design Brief → roblox-object-builder (Autonomous)
+**Outcome:** PARTIAL — 色・マテリアルは成功、スケール・位置・植物・照明で欠陥
+
+| 項目 | 値 |
+|------|-----|
+| Parts | 79 |
+| Retries | 0 |
+| pcall failures | 0 |
+| CSG | 0（casual style, 適切） |
+| Colors match brief | ✅ |
+| Scale feel | ❌ 1.5〜2倍必要 |
+| Chair orientation | ❌ 全台逆向き |
+| Furniture position drift | ❌ 多数ズレあり |
+| Vegetation | ❌ Sphere使用（Block-firstに違反） |
+| Lighting | ❌ 明るすぎ（屋内用プリセット未適用） |
+
+**Key findings:**
+
+- Interior room scale underestimation: 40×30×12 → 60×45×18+ needed.
+  Enclosed rooms feel smaller than open builds at the same dimensions.
+  (Geometry/Design - RED - HIGH)
+- Seated furniture LookVector re-occurred: chair orientation reversed in conference room.
+  Rule existed in gotchas.md but absent from SKILL.md Critical Gotchas quick table.
+  (Geometry - RED - HIGH)
+- Sphere foliage on plants violates Roblox-style expectation. Map Mode vegetation rule
+  was not applied to Object Mode / interior prop builds.
+  (Design - RED - HIGH)
+- Furniture position drift: likely caused by positions derived from world origin
+  instead of room floor CFrame.
+  (Geometry - RED - MEDIUM)
+- Indoor lighting too bright: no indoor/office lighting preset existed.
+  (Materials - RED - MEDIUM)
+- Design-consultant brief → clean color execution: explicit RGB values in brief
+  prevented all color interpretation errors.
+  (Process - GREEN - MEDIUM)
+
+**Skill updates made:**
+
+- `SKILL.md`: Added "Seated furniture facing" row to Critical Gotchas table
+- `docs/design-wisdom.md`: Added "Enclosed room sizing" (spaciousness multiplier, min 12 studs²/person, ceiling ≥16)
+- `docs/design-wisdom.md`: Extended Block-first vegetation rule to ALL builds (not just Map Mode); code example added
+- `docs/gotchas.md`: Added "Furniture in enclosed rooms must be derived from room floor CFrame"
+- `docs/design-wisdom.md`: Added "Indoor/office" lighting preset (Brightness 0.7-0.9 + PointLight supplement)
+
+**Open question resolution:**
+
+- "Does no-skill outperform skill at spatial layout for single-room interiors?" (from kitchen session)
+  → STILL OPEN — this was a single-agent run, not an A/B test
+
+**Open questions (LOW confidence - validate in future sessions):**
+
+- Does the room floor CFrame anchor approach (furniture relative to roomFloor.CFrame)
+  reliably prevent position drift, or does the room itself need to be placed at world
+  origin first?
+- The chair orientation error (LookVector reversed) persisted even with the gotchas.md
+  rule. Does elevating it to SKILL.md's Critical Gotchas table change agent behavior,
+  or is a Phase 3 verification check needed that explicitly prints LookVector for seated furniture?
+
 ## 2026-02-27 - Wood House Kitchen A/B Test (Skill vs No-Skill)
 
 **Goal:** ウッドハウスのおしゃれなキッチン（単体）を Hybrid 3-Phase (skill) vs ワンショット (no-skill) で比較。

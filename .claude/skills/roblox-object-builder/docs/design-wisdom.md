@@ -18,6 +18,20 @@ Focuses on what code alone cannot tell you.
 
 ## Zone Layout
 
+### Enclosed room sizing (CRITICAL for interiors)
+
+Architectural minimums produce rooms that feel cramped once furnished and occupied.
+Closed walls reduce perceived size — apply a spaciousness premium.
+
+| Room type | Floor (studs²/person) | Ceiling height |
+|-----------|----------------------|----------------|
+| Meeting / conference | 12–16 / person | ≥ 16 studs |
+| Office (open plan) | 10–14 / person | ≥ 14 studs |
+| Corridor / hallway | — | 10–12 studs |
+
+Rule: for any room holding 4+ occupants, verify `floorArea / maxOccupants >= 12`
+and `ceilingHeight >= 16` before finalizing dimensions.
+
 ### Hub & Spoke
 
 Best layout for game lobbies. Central plaza as hub, zones radiating outward.
@@ -188,6 +202,21 @@ Anti-pattern: same-size spheres in a ring = abstract art. Always include a non-s
 Default: Block massing → Wedge trims → Cylinder for curves → Sphere accent-only
 (< 20% visible parts per prop). Sphere-heavy only when explicitly requested.
 
+**Vegetation / foliage**: This rule applies to ALL builds, not just Map Mode.
+Roblox-style tree canopy = stacked/offset **Block** shapes, not Sphere clusters.
+Sphere foliage reads as "abstract blob" in block-based worlds and breaks visual style.
+
+```lua
+-- WRONG: Sphere canopy (looks out of place in Roblox block world)
+canopy.Shape = Enum.PartType.Ball
+
+-- CORRECT: Block canopy (matches Roblox visual language)
+canopy.Size = Vector3.new(4, 3, 4)  -- flat Block for low canopy
+-- or stacked Blocks of decreasing size for layered look
+```
+
+Override only when brief explicitly requests "rounded" or "organic" style.
+
 ### WedgePart roof eaves (temple/pagoda architecture)
 
 **Exception to Block-first**: For Japanese temple, pagoda, shrine, or castle roofs,
@@ -308,6 +337,11 @@ Large (floors, walls, buildings) → Medium (booths, gates, benches) → Small (
 
 **Pastel/cute**: ClockTime 12-13, Brightness 1.0-1.2 (NEVER >1.3), Saturation 0.15-0.25,
 Bloom threshold >= 0.95, intensity 0.2-0.3
+
+**Indoor/office**: ClockTime 12, Brightness 0.7-0.9, Ambient ~RGB(50, 50, 55),
+Saturation 0.0-0.1, Bloom threshold 0.97, intensity 0.1-0.2
+→ Supplement with PointLight inside the room (Brightness 1.0-1.5, Range 30-40, Shadows=false)
+→ Avoid global Brightness > 1.0 for enclosed rooms — bright sky bleeds through glass and over-exposes
 
 ### Pastel color saturation floor (CRITICAL)
 

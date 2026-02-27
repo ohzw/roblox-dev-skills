@@ -18,12 +18,14 @@ description: >
 
 ## MCP Tools
 
+Use any available `mcp__roblox__*` tools as needed. Common ones:
+
 | Tool | Purpose |
 |------|---------|
 | `mcp__roblox__run_code` | Execute Lua code (create, modify, verify) |
 | `mcp__roblox__insert_model` | Insert existing models |
 
-MCP executions are stateless — redeclare helpers and re-acquire references every call.
+`run_code` executions are stateless — redeclare helpers and re-acquire references every call.
 
 ---
 
@@ -184,13 +186,14 @@ Full details with code examples: [docs/gotchas.md](docs/gotchas.md)
 | Anchored | Defaults to `false`. Set `true` on all structural parts. |
 | SpawnLocation | Auto-detected for respawning. Set `Neutral = false` or `Transparency = 1`. |
 | Constraints | Cannot meet user constraint → ask, never silently break |
+| Seated furniture facing | `LookVector` = **backrest** direction; the person faces `-LookVector`. Use `CFrame.lookAt(pos, awayFromTarget)` to face toward target. |
 
 ---
 
 ## Scale Reference
 
 ```
-Player: ~5 studs | Door: 4w × 7h | Ceiling: 10-14 | Hall: 20-35
+Player: ~5 studs | Door: 4w × 7h | Ceiling: 10-14 (corridor/personal), 16+ (4+ occupant room) | Hall: 20-35
 Corridor: 6-8w | Neon thickness: 0.1-0.4
 Map: 10p ~150² | 20p ~250² | 30p ~350² | Buildings: 30-90h (vary for skyline)
 ```
@@ -201,7 +204,7 @@ Map: 10p ~150² | 20p ~250² | 30p ~350² | Buildings: 30-90h (vary for skyline)
 
 Run before reporting completion on **every build**, regardless of strategy or scale.
 
-1. **Geometry**: Paths >= 90% of ground size. Furniture facing: `-LookVector · toCenter > 0`. No large surface all RGB > 225. Adjacent surfaces differ >= 30 in one channel.
+1. **Geometry**: Paths >= 90% of ground size. Furniture facing: `-LookVector · toCenter > 0`. No large surface all RGB > 225. Adjacent surfaces differ >= 30 in one channel. **Floor penetration**: for every leg/column, verify `bottom_Y >= floorTop` (bottom ≥ floor surface — never below).
 2. **Readability**: Hero props recognizable in <1s at oblique view. Layered anatomy (base + body + accent), not symbolic primitives.
 3. **CSG quota** (rounded/ornamental themes): >= 1 intentional CSG feature. Log reason if skipped.
 4. **Verification**: Run [docs/verification.md](docs/verification.md) checks (position drift, leaked cutters, orientation, overlap, anchoring, part counts).

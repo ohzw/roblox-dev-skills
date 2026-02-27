@@ -332,6 +332,64 @@ This applies to **both** embedded parts (center inside a wall) and flush-mounted
 **Rule:** When two BaseParts share a face at the same world-space position, offset the
 decorative one by **+0.05 studs** along the face normal. No exceptions.
 
+### Bridging parts penetrate floor when height is a constant (CRITICAL)
+
+**Symptom:** Chair legs, table legs, or columns visibly penetrate below the floor surface.
+Camera angle makes it obvious — the bottom of the leg disappears into the floor mesh.
+
+**Root cause:** The part's `Size.Y` (height) is set as a hardcoded constant (e.g., `legHeight = 3`).
+If the actual gap between the seat bottom and the floor top is smaller than that constant,
+the leg overflows below the floor.
+
+**Fix:** Compute bridging-part height from the two reference surfaces, never from a constant:
+
+```lua
+local floorTop   = roomFloor.Position.Y + roomFloor.Size.Y / 2
+local seatBottom = seat.Position.Y      - seat.Size.Y / 2
+
+local legHeight  = seatBottom - floorTop            -- exact gap, no overflow
+local legCenterY = (seatBottom + floorTop) / 2      -- midpoint between the two surfaces
+
+leg.Size   = Vector3.new(legThickness, legHeight, legThickness)
+leg.CFrame = CFrame.new(legX, legCenterY, legZ)
+```
+
+**Prevention:** Any part that spans between two horizontal reference surfaces (legs, risers,
+columns, support struts) must derive its height from the actual gap. The pattern is:
+
+```
+height  = upper_reference_Y  - lower_reference_Y
+centerY = lower_reference_Y  + height / 2
+```
+
+Apply this to all four legs of every chair/table in a single data-table loop so the
+constraint is never bypassed by copy-paste.
+
+---
+
+### Furniture in enclosed rooms must be derived from room floor CFrame (CRITICAL)
+
+**Symptom:** Chairs, tables, and other furniture appear significantly offset from their
+intended positions inside an enclosed room (floor + walls + ceiling).
+
+**Root cause:** The room itself is placed at a non-zero world position. Furniture
+positions were calculated relative to world origin (0,0,0) instead of the room floor.
+The offset between world origin and room floor propagates to every piece of furniture.
+
+**Fix:** In Phase 1, establish the room floor as the spatial anchor. Derive all
+furniture positions from `roomFloor.CFrame`:
+
+```lua
+local roomFloor = model:FindFirstChild("Floor")
+-- Correct: furniture relative to room floor
+local tableCF = roomFloor.CFrame * CFrame.new(0, roomFloor.Size.Y/2 + tableHeight/2, 0)
+local chairCF = tableCF * CFrame.new(chairOffset.X, 0, chairOffset.Z)
+```
+
+**Prevention:** Interior room builds follow the same Relative CFrame Pattern as
+multi-component props. Treat the room floor as "parent" — never hardcode world-space
+X/Z coordinates for furniture.
+
 ### Sub-component positions must be derived from parent CFrame (CRITICAL)
 
 **Symptom:** Sub-parts of a multi-part object appear at the wrong position relative
