@@ -124,21 +124,34 @@ Run before reporting completion.
 2. **CSG check**: At least 1 intentional CSG feature for any build with furniture, architecture, or decorative elements. If zero, list where curves/recesses were skipped and reconsider.
 3. **Technical**: All parts anchored. No leaked CSG cutters in workspace. No floor penetration (`bottom_Y >= floor surface`).
 4. **Color/material**: Adjacent large surfaces differ visibly. No large surface has all RGB channels > 225.
-5. **Vegetation**: No Sphere as primary foliage shape. Plant foliage = stacked Blocks or Cylinders only. Sphere is accent only (≤ 1 per plant, not the dominant shape).
-6. **Seated furniture orientation** *(MANDATORY — 3rd-session recurring failure)*: For every chair/bench placed, verify the person faces the focal point (table, screen, stage). Person faces `-LookVector`. Run this check before reporting done:
+5. **Vegetation** *(4th-session recurring failure)*: Foliage = **`Enum.PartType.Block` parts only**. Sphere AND Cylinder are both banned as primary foliage — they produce rounded blobs that look wrong in Roblox's block-style world. Use stacked flat rectangular Blocks (tiered layer cake). Cylindrical planters must be upright (`CFrame.Angles(0, 0, math.pi/2)`).
+6. **Seated furniture orientation** *(MANDATORY — recurring failure)*: For every chair/bench placed, verify the person faces the focal point (table, screen, stage). Person faces `-LookVector`. Run this check before reporting done:
    ```lua
-   -- Paste into a verification run_code call
-   local focal = workspace.ConferenceRoom.Table_Top  -- adjust name
-   for _, p in ipairs(workspace.ConferenceRoom:GetDescendants()) do
-     if p.Name:lower():find("chair") or p.Name:lower():find("seat") then
-       local personFacing = -p.CFrame.LookVector
-       local toFocal = (focal.Position - p.Position).Unit
-       local dot = personFacing:Dot(toFocal)
-       print(p.Name, "orientation dot:", math.floor(dot*100)/100, dot > 0 and "OK" or "REVERSED - fix with * CFrame.Angles(0,math.pi,0)")
+   -- Paste into a verification run_code call; adjust model/part names
+   local model = workspace:FindFirstChild("ConferenceRoom")
+   local focal = model and model:FindFirstChild("Table_Top", true)
+   for _, p in ipairs(model:GetDescendants()) do
+     if p:IsA("BasePart") and (p.Name:lower():find("seat") or p.Name:lower():find("chair")) then
+       local dot = (-p.CFrame.LookVector):Dot((focal.Position - p.Position).Unit)
+       print(p.Name, math.floor(dot*100)/100, dot > 0 and "OK" or "REVERSED")
      end
    end
    ```
-   Any REVERSED result must be corrected before reporting done.
+   Any REVERSED result must be fixed before reporting done.
+7. **Seated furniture Y position** *(recurring failure)*: Every seat part's bottom face must be at or above the floor surface. Run this check:
+   ```lua
+   local model = workspace:FindFirstChild("ConferenceRoom")
+   local floor = model and model:FindFirstChild("Floor", true)
+   local floorTop = floor.Position.Y + floor.Size.Y / 2
+   for _, p in ipairs(model:GetDescendants()) do
+     if p:IsA("BasePart") and p.Name:lower():find("seat") then
+       local bottom = p.Position.Y - p.Size.Y / 2
+       print(p.Name, "bottom:", math.floor(bottom*100)/100,
+         bottom >= floorTop - 0.1 and "OK" or ("BELOW FLOOR (floorTop=" .. math.floor(floorTop*10)/10 .. ")"))
+     end
+   end
+   ```
+   Any BELOW FLOOR result means `Position.Y = floorTop + Size.Y/2 + legHeight` was not used.
 
 ---
 

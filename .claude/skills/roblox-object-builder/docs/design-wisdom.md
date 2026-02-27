@@ -68,7 +68,57 @@ glass walls and over-expose the interior. Use interior PointLights instead.
 
 ---
 
+## Small Prop Readability
+
+A prop that cannot be identified in one second at player eye level is visual noise — it
+degrades the scene's perceived quality rather than adding to it.
+
+**Recognition threshold**: If the prop requires > 2 parts to be distinguishable from
+a random blob, and the scale forces each part to < 0.5 studs, omit the prop instead.
+
+**Rule: table dressing props (glasses, pitchers, cups, notepads)**
+
+| Real object | Minimum recognizable shape | Skip if... |
+|-------------|---------------------------|------------|
+| Drinking glass | Cylinder body (H ≈ 1.2) + flat base disc | diameter < 0.4 studs |
+| Pitcher / jug | Cylinder body + handle arc (WedgePart × 2) | if handle can't fit, use glass |
+| Notepad | Flat rectangle + thin color band (cover edge) | always renderable |
+| Cup | Cylinder body + saucer disc below | diameter < 0.4 studs |
+
+Single cylinder = unrecognizable. Two cylinders (body + base) = recognizable as cup/glass.
+If the real-world version would need > 3 parts AND fits inside a 0.5-stud cube: **omit it**.
+
+Do NOT place decorative props for completeness if they cannot be recognized.
+A bare table reads better than a table covered in unidentifiable cylinders.
+
+---
+
 ## Rendering Gotchas
+
+### Light-colored upholstered furniture causes room white-out
+
+Chair seats and backrests are repeated many times in a room. If their color is near-white
+(all RGB channels > 200), the room reads as over-exposed even when global Brightness is
+within range. This is because the human eye integrates many similar-colored surfaces.
+
+**Rule for upholstered furniture (chairs, sofas, benches)**:
+- At least one RGB channel must be ≤ 150 (sufficient contrast anchor)
+- Near-white (`RGB > 200` on all channels) is only acceptable if the floor and walls
+  are significantly darker (difference ≥ 80 on at least one channel)
+
+```lua
+-- WRONG (all channels high → white-out in groups of 6+)
+chair.Color = Color3.fromRGB(245, 240, 238)
+
+-- RIGHT (espresso: dark, provides contrast against light walls)
+chair.Color = Color3.fromRGB(50, 45, 42)
+
+-- RIGHT (navy: mid-dark, still warm)
+chair.Color = Color3.fromRGB(40, 55, 80)
+```
+
+Always follow the Design Brief color specification exactly.
+Do NOT substitute lighter colors "for visibility" — the brief was designed for contrast.
 
 ### Pastel colors wash out on large surfaces
 

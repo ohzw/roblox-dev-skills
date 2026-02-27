@@ -103,9 +103,60 @@ Offset to wall surface + decoration half-thickness + 0.05:
 deco.CFrame = wall.CFrame * CFrame.new(0, yOff, -(wallT/2 + decoT/2 + 0.05))
 ```
 
+### Window / door trim (sill, header, threshold) embedded in opening
+
+Trim at openings has **two independent axes** to verify. Forgetting either axis
+embeds the trim inside the wall or wall-center:
+
+1. **Normal offset** (same rule as wall decorations): protrude by `wallT/2 + trimT/2 + 0.05`
+2. **Vertical position**: the sill sits at the opening's *bottom* edge; the header sits at the *top*. Derive from opening geometry — never use `wall.Position.Y` as Y anchor:
+
+```lua
+-- Window sill: protrude outward AND sit at opening bottom
+local openingBottomWorld = windowOpening.Position.Y - windowOpening.Size.Y / 2
+local wallT = wall.Size.Z  -- wall thickness
+local sillT = sill.Size.Y  -- sill thickness
+
+-- Express in wall-local space then convert
+local localY = openingBottomWorld - wall.Position.Y - sillT / 2
+sill.CFrame = wall.CFrame * CFrame.new(0, localY, -(wallT / 2 + sillT / 2 + 0.05))
+```
+
 ### Co-planar Z-fighting
 
 Two faces at the same plane flicker. Offset decorative surface by **+0.05 studs**.
+
+### Multi-part furniture: seat Y must be derived from leg height, not world origin
+
+Chair/bench seats placed at world Y = 0 end up inside or below the floor when
+the floor is above Y = 0. The seat's center Y must account for the actual floor position
+AND the legs that elevate it:
+
+```lua
+-- Floor reference (read once, use for all furniture in the room)
+local floorTop = floor.Position.Y + floor.Size.Y / 2
+
+-- Leg geometry first
+local legH  = 1.5   -- desired leg height in studs
+local legT  = 0.3   -- leg cross-section thickness
+leg.Size    = Vector3.new(legT, legH, legT)
+leg.Position = Vector3.new(x, floorTop + legH / 2, z)  -- leg center
+
+-- Seat sits on top of legs
+local seatH = 0.4
+seat.Size     = Vector3.new(seatW, seatH, seatD)
+seat.Position = Vector3.new(cx, floorTop + legH + seatH / 2, cz)  -- NOT Vector3.new(cx, 0, cz)
+
+-- Backrest starts at seat top
+local backH  = 3.0
+local backT  = 0.3
+local seatTop = floorTop + legH + seatH
+back.Size     = Vector3.new(seatW, backH, backT)
+back.Position = Vector3.new(cx, seatTop + backH / 2, cz - seatD/2 + backT/2)
+```
+
+Every sub-component Y is a chain: `floorTop → legH → seatH → backH`.
+Breaking the chain at any link (e.g. `Position.Y = 0`) collapses the whole chair.
 
 ### Bridging parts penetrate floor
 

@@ -9,6 +9,123 @@ LOW confidence findings accumulate here until validated across sessions.
 
 <!-- New sessions are appended below this line -->
 
+## 2026-02-28 - ConferenceRoom 2nd attempt (ルール更新後の再ビルド検証)
+
+**Goal:** 前回反省後にルール更新済みSKILLで再ビルドし、修正効果を確認
+**Outcome:** FAILURE — 4件の欠陥が再発または新規発生
+
+| 項目 | 値 |
+|------|-----|
+| Sphere/Cylinder foliage | ❌ 4回目再発（"Blocks or Cylinders"がCylinder許可だったため）|
+| Planter orientation | ❌ 横倒し（Cylinder axis=X 未適用）|
+| Chair seat Y=0 | ❌ 新規発生（floorTop + legH + seatH/2 未計算）|
+| Floating parts | ❌ 絶対座標エラーによる部品漂流 |
+| White-out | ❌ 椅子が白色（Design Brief カラー未適用）|
+
+**Key findings:**
+
+- Post-Build Gate item 5 "Blocks or Cylinders" がCylinder許可と解釈された。
+  "Blocks OR Cylinders" は曖昧すぎ。正確には"Block ONLY"が必要。
+  (Design - RED - HIGH)
+- Chair seat Position.Y = 0 が使われ、床に埋没。
+  floorTop → legH → seatH の連鎖計算が必要。gotchas.mdに未記載だった。
+  (Geometry - RED - HIGH)
+- 浮遊パーツ：絶対座標禁止ルール(SKILL.md Anti-Patterns)が適用されなかった。
+  部品がモデル外のworkspace直下に配置されている。
+  (Geometry - RED - MEDIUM)
+- 椅子が白色（Design Brief はエスプレッソ RGB(50,45,42)）。大量の白椅子が
+  ルームを白飛びさせる。設計仕様カラーが無視された。
+  (Materials - RED - HIGH)
+- **Meta-finding**: ルールを追加しても繰り返し失敗が続いている。原因仮説:
+  supplementary docs は "Read when relevant" のため、エージェントが適切なタイミングで
+  読まない。Post-Build Gateに実行コードを入れる戦略は正しいが、エージェントが
+  Gate item 7 (seat Y) などの新規追加を認識する前にビルドが完了してしまっている可能性。
+  (Process - RED - HIGH)
+
+**Skill updates made:**
+
+- `SKILL.md`: Post-Build Gate item 5 修正 — "Blocks OR Cylinders" → "Block parts ONLY (Enum.PartType.Block); Sphere AND Cylinder both banned as primary foliage"
+- `SKILL.md`: Post-Build Gate item 7 追加 — seat Y position verification code
+- `docs/gotchas.md`: "Multi-part furniture: seat Y must be derived from leg height" 追加（floorTop→legH→seatH→backH の連鎖計算パターン）
+- `docs/design-wisdom.md`: "Light-colored upholstered furniture causes room white-out" 追加（椅子は最低1チャンネル≤150 ルール）
+
+**Open question resolution:**
+
+- "Does Post-Build Gate vegetation check (item 5) prevent 4th recurrence?"
+  → REFUTED — "Blocks or Cylinders" という表現がCylinder許可と解釈された。
+    "Block ONLY" に修正済み。
+
+**Open questions (LOW confidence - validate in future sessions):**
+
+- Post-Build Gate の item 6/7 検証コードがエージェントに実際に実行されるか？
+  コード内の `ConferenceRoom` というハードコードされたモデル名が
+  異なるビルドでは機能しない可能性がある。汎用的な名前探索に変更すべきか？
+- 繰り返し失敗の根本原因がドキュメントの内容ではなくエージェントの読み込み順序に
+  ある可能性がある。SKILL.md に直接書かれた内容は読まれ、supplementary docs は
+  スキップされている可能性はないか？
+
+## 2026-02-28 - ConferenceRoom (大型・モダンウォームウッド, ロールプレイ用)
+
+**Goal:** ウォームウッド × モダンオフィス大型会議室（10人以上, 36×20×18 studs）
+**Process:** roblox-design-consultant → Design Brief → roblox-object-builder (Autonomous)
+**Outcome:** PARTIAL — ビルド自体は技術的に成功（148パーツ）、しかし4件の視覚的欠陥
+
+| 項目 | 値 |
+|------|-----|
+| Parts | 148 |
+| Retries | 0 |
+| pcall failures | 0 |
+| Sphere for foliage | ❌ 3回目の再発 |
+| Chair orientation | ❌ 3回目の再発（ルール存在するが未適用） |
+| Table props readability | ❌ 初回検出（単一シリンダー） |
+| Win_Sill embedded | ❌ ルール存在するが未適用 |
+
+**Key findings:**
+
+- Sphere foliage on plants: 3rd occurrence despite rule in design-wisdom.md.
+  Rule was in a supplementary doc agents read "when relevant" — not in Post-Build Gate.
+  (Design - RED - HIGH)
+- Seated furniture LookVector reversed: 3rd occurrence. Rule exists in gotchas.md.
+  SKILL.md Critical Gotchas table was missing the entry (planned in 2026-02-27 session
+  but not confirmed present). Post-Build Gate also had no orientation check.
+  (Geometry - RED - HIGH)
+- Table props (glasses, pitcher) as single cylinders: unrecognizable to humans.
+  No rule about minimum recognizability for small props existed.
+  (Design - RED - MEDIUM)
+- Window sill (Win_Sill) embedded inside wall: existing wall-decoration offset rule
+  not applied to horizontal trim at openings. Y-axis anchor (bottom of opening) was
+  missing from the rule, causing sill to sit at wall center.
+  (Geometry - RED - HIGH)
+
+**Skill updates made:**
+
+- `SKILL.md`: Post-Build Gate items 5 & 6 added
+  - Item 5: Vegetation — No Sphere as primary foliage. Block/Cylinder stacks only.
+  - Item 6: Seated furniture orientation — mandatory LookVector verification code snippet
+- `docs/gotchas.md`: Extended "Decorations embedded inside walls" with new sub-section
+  "Window / door trim (sill, header, threshold)" covering dual-axis verification
+  (normal offset + vertical position derived from opening bottom, not wall center)
+- `docs/design-wisdom.md`: Added "Small Prop Readability" section with recognition
+  threshold rule and table dressing vocabulary (glass, pitcher, notepad, cup)
+
+**Open question resolution:**
+
+- "Does elevating LookVector to SKILL.md's Critical Gotchas table change agent behavior?"
+  → REFUTED — chairs still reversed this session. Elevation alone is insufficient.
+  Fix applied: added mandatory verification code to Post-Build Gate item 6.
+- "Does the room floor CFrame anchor approach reliably prevent position drift?"
+  → STILL OPEN — no position drift reported this session (weak positive), but
+    Win_Sill embedding suggests trim elements were not derived from opening CFrame.
+
+**Open questions (LOW confidence - validate in future sessions):**
+
+- Does the Post-Build Gate orientation check (item 6 verification code) actually get
+  executed by the agent, or does it copy-paste the model name incorrectly and skip?
+- Does adding Sphere vegetation check to Post-Build Gate prevent the 4th recurrence?
+- The window sill embedding fix requires opening CFrame reference. Does the agent
+  reliably have the opening part available when placing trim, or does it need to
+  be explicitly named/anchored in Phase 1?
+
 ## 2026-02-28 - SF Conference Room (SFスタイル・ロールプレイ用会議室)
 
 **Goal:** SFスタイル会議室（ロールプレイ系, 8〜12人, ホワイト+ネオンブルー）
