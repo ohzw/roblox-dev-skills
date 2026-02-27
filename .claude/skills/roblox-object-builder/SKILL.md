@@ -1,17 +1,17 @@
 ---
 name: roblox-object-builder
 description: >
-  Build 3D objects, buildings, and maps in Roblox Studio via MCP.
-  Handles single objects through large-scale hubs.
-  Use when: user asks to create, build, or place ANY physical object in Roblox —
-  furniture, animals, vehicles, gates, towers, arenas, lobbies, hubs, decorations,
-  terrain features, or any tangible in-game structure.
-  Triggers on casual requests like "○○を作って", "○○を置いて", "Lobbyを作りたい",
-  "build me a ___", "create a ___", "make a ___" in the context of Roblox Studio.
+  Build 3D objects, props, and room-scale structures in Roblox Studio via MCP.
+  Use when: user asks to create, build, or place a single physical object —
+  furniture, animals, vehicles, gates, towers, decorations, street props,
+  room interiors, or any individual tangible structure.
+  Triggers on: "○○を作って", "○○を置いて", "build me a ___", "create a ___",
+  "make a ___" in the context of Roblox Studio.
   Also use when user mentions CSG, Union, Subtract, Part placement, or 3D modeling
   in Roblox. If the user is in a Roblox project and asks to "make" or "build"
   something physical, this skill should trigger even without explicit mention of
   "3D" or "Roblox".
+  Scope boundary: for full maps, arenas, lobbies, hubs, or multi-zone environments → use roblox-map-builder instead.
 ---
 
 # Roblox Object Builder
@@ -124,6 +124,21 @@ Run before reporting completion.
 2. **CSG check**: At least 1 intentional CSG feature for any build with furniture, architecture, or decorative elements. If zero, list where curves/recesses were skipped and reconsider.
 3. **Technical**: All parts anchored. No leaked CSG cutters in workspace. No floor penetration (`bottom_Y >= floor surface`).
 4. **Color/material**: Adjacent large surfaces differ visibly. No large surface has all RGB channels > 225.
+5. **Vegetation**: No Sphere as primary foliage shape. Plant foliage = stacked Blocks or Cylinders only. Sphere is accent only (≤ 1 per plant, not the dominant shape).
+6. **Seated furniture orientation** *(MANDATORY — 3rd-session recurring failure)*: For every chair/bench placed, verify the person faces the focal point (table, screen, stage). Person faces `-LookVector`. Run this check before reporting done:
+   ```lua
+   -- Paste into a verification run_code call
+   local focal = workspace.ConferenceRoom.Table_Top  -- adjust name
+   for _, p in ipairs(workspace.ConferenceRoom:GetDescendants()) do
+     if p.Name:lower():find("chair") or p.Name:lower():find("seat") then
+       local personFacing = -p.CFrame.LookVector
+       local toFocal = (focal.Position - p.Position).Unit
+       local dot = personFacing:Dot(toFocal)
+       print(p.Name, "orientation dot:", math.floor(dot*100)/100, dot > 0 and "OK" or "REVERSED - fix with * CFrame.Angles(0,math.pi,0)")
+     end
+   end
+   ```
+   Any REVERSED result must be corrected before reporting done.
 
 ---
 
