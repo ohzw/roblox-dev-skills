@@ -77,3 +77,20 @@ Large operations are unstable. Split into multiple calls if needed.
 | Cut surfaces wrong color | `UsePartColor` not set | Set `UsePartColor = true` + `Color` |
 | Rotated part snaps upright after CSG | Position-only CFrame override | Copy full `originalPart.CFrame` |
 | `FindFirstChild` returns nil after CSG | CSG converts Part → UnionOperation | Name the result, or run CSG at end of phase |
+
+## Union Limitations
+
+Prefer parts over Union when either of these applies.
+
+### RenderFidelity = Performance is unavailable on Union
+
+`RenderFidelity = Performance` (distance-based LOD) is a MeshPart-only feature.
+UnionOperation always renders at full fidelity regardless of camera distance.
+For objects that will be replicated many times across a scene, prefer MeshPart
+import over Union.
+
+### Property changes trigger full geometry recalculation
+
+Modifying any property on a UnionOperation at runtime (Color, Material, etc.)
+causes the engine to recalculate its entire geometry. Avoid Union for objects
+that change properties at runtime — keep them as separate Parts instead.

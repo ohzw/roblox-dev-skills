@@ -37,6 +37,13 @@ Keep differently-colored sections as separate parts.
 
 Set explicitly: `Box` for decorative, `PreciseConvexDecomposition` for functional.
 
+Complete collision exclusion requires **both** `CanCollide = false` AND `CanTouch = false`.
+Setting only `CanCollide` is insufficient — touch callbacks still fire.
+
+**Future lighting bug**: MeshParts with `CollisionFidelity ≠ Box` cast incorrect shadows
+when `Lighting.EnvironmentDiffuseScale > 0` or `EnvironmentSpecularScale > 0`.
+Always set `CollisionFidelity = Box` on decorative MeshParts.
+
 ---
 
 ## Positioning & Orientation
@@ -167,6 +174,16 @@ local legH = seatBottom - floorTop
 leg.Size = Vector3.new(t, legH, t)
 leg.CFrame = CFrame.new(x, (seatBottom + floorTop) / 2, z)
 ```
+
+### Increment precision: Power of Two
+
+Part sizes and positions using base-10 decimals (0.1, 0.3, 0.05 etc.) accumulate
+floating-point errors. Adjacent parts develop microscopic invisible gaps that cannot
+be diagnosed visually.
+
+Use the binary series instead: **1, 0.5, 0.25, 0.125, 0.0625**
+
+For rotation increments: **5° or 2.5°**
 
 ### Surface-sibling overlap
 
