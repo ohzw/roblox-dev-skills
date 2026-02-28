@@ -13,6 +13,10 @@ description: >
   "3D" or "Roblox".
   Scope boundary: applies if the result can be grouped into a single `Model`.
   For full maps, arenas, lobbies, hubs, or multi-zone environments → use building-maps instead.
+  Dispatch rule: When the user requests multiple related/variant objects
+  (e.g., "5 types of swords", "3 chair styles"), dispatch ALL variants to
+  a SINGLE agent. Do NOT spawn parallel agents. Consistency requires
+  sequential building by one agent.
 ---
 
 # Building 3D Objects in Roblox
@@ -72,6 +76,23 @@ Establish the spatial relationships.
 - **If part count > 5**: Snap dimensions to a consistent grid (e.g., 0.1 or 0.5 studs) to avoid floating-point drift.
 
 *Read `docs/spatial-patterns.md` now if either condition applies.*
+
+#### Multi-Object Variant Sets
+
+When building multiple related objects (e.g., "5 bow types", "3 chair styles"):
+
+1. **Before building anything**, define a shared manifest:
+   - Parent Folder name (e.g., `BowCollection`)
+   - Naming pattern for variants
+   - Shared bounding box / scale reference
+   - Construction technique (segment count, CSG approach, part types)
+   - Shared material/color palette
+2. **Build the first variant fully** (Plan → Build → Verify).
+3. **Re-read the first variant from workspace** to establish ground truth.
+   Do not rely on memory — use `FindFirstChild` to read actual sizes/positions.
+4. **Vary only the distinguishing features** per subsequent variant
+   (accent color, proportions, decorative details) while keeping the shared
+   manifest constant.
 
 ### Phase 3: Build (Geometry & CSG)
 Generate the parts.

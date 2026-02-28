@@ -70,4 +70,32 @@ Design Brief が確定しました。
 上記をそのまま貼り付けて「これで作って」と伝えると、building-3d-objects スキルが実装します。
 ```
 
+### Variant Set Brief (複数バリアントの場合)
+
+複数の関連オブジェクトを依頼された場合、個別 Brief ではなく Set Brief を出力する:
+
+```
+--- Design Brief (Variant Set) ---
+Set name: [セット名]
+Variant count: [数]
+Shared style: [共通スタイル]
+Shared scale: [共通スケール基準]
+Shared technique: [共通造形手法]
+Shared palette: [共通マテリアル・カラー]
+
+Variants:
+1. [名前]: [差分のみ — 形状・色・サイズの違い]
+2. [名前]: [差分のみ]
+...
+
+Special notes: [その他]
+-----------------------------------
+
+Design Brief (Variant Set) が確定しました。
+上記をそのまま貼り付けて「これで作って」と伝えると、building-3d-objects スキルが
+1つのエージェントで全バリアントを順番に実装します。
+```
+
+**IMPORTANT**: 個別の Brief を複数作らないこと。共通制約の定義が最も重要。
+
 **STOP HERE. Do NOT write any Lua code. Do NOT call any MCP tools.**
