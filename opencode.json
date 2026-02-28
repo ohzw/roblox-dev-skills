@@ -3,15 +3,14 @@
   "mcp": {
     "roblox": {
       "type": "local",
-      "command": ["/Applications/RobloxStudioMCP.app/Contents/MacOS/rbx-studio-mcp", "--stdio"],
+      "command": [
+        "/Applications/RobloxStudioMCP.app/Contents/MacOS/rbx-studio-mcp",
+        "--stdio"
+      ],
       "enabled": true
     }
   },
   "permission": {
-    "bash": "allow",
-    "skill": {
-      "*": "allow",
-      "roblox-design-consultant": "deny"
-    }
+    "bash": "allow"
   }
 }
