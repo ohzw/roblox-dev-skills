@@ -9,6 +9,122 @@ LOW confidence findings accumulate here until validated across sessions.
 
 <!-- New sessions are appended below this line -->
 
+## 2026-03-01 - FarmMap A/B/C Test (Maps vs 3DObj vs NoSkill, Large Scale)
+
+**Goal:** 同一 Design Brief (Classic Roblox Farm, 6ゾーン大規模マップ) を 3 条件で並列構築し、スキル効果を大規模環境で検証
+**Process:** roblox-design-consultant → Design Brief → 3 サブエージェント並列起動 (building-maps / building-3d-objects / no-skill)
+**Outcome:** SUCCESS (比較完了) — building-maps が空間バランスで優位。前回(Tropical Resort, 小規模)とは逆の結論
+
+| 指標 | A: building-maps | B: building-3d-objects | C: no-skill |
+|------|:---:|:---:|:---:|
+| Parts | 1,188 | 1,445 | **3,209** |
+| MCP calls | 34 | 31 | **23** |
+| Duration (min) | 14.5 | 14.4 | **7.4** |
+| Tokens | 88,028 | 87,886 | **72,380** |
+| Zones completed | 6/6 | 6/6 | 6/6 |
+| Validation | 0 errors ✓ | 0 errors ✓ | 未実施 |
+| Folder hierarchy | MapRoot + zone folders ✓ | MapRoot + zone folders ✓ | Model直下 |
+| Orientation issues | やや少 | 中 | 中 |
+| Overlap issues | 少 | **多** | 中 |
+| Environment settings | PointLight only | PointLight only | **ClockTime + Atmosphere** |
+| **User rating (best)** | **1位** | 3位 | 2位 |
+
+**User visual assessment:**
+- building-maps: 全体のバランス感が最も自然。向き違いも比較的少ない
+- building-3d-objects: 重なりの問題が多いが、マップ向けスキルではないので想定内
+- no-skill: 効率は高いが空間バランスではmapsに劣る
+- 色・マテリアル: 3つとも良好
+- 全3エージェントに向き違いパーツあり（大差なし）
+
+**Key findings:**
+
+- building-maps のトップダウン6フェーズが大規模マップで空間バランス優位を実現。前回(100×100)ではno-skillが優位だったが、今回の大規模(~500×500+)ではスキルの構造化が効いた。
+  (Process - GREEN maps - HIGH)
+- パーツ数≠品質: no-skillが2.5倍のパーツ(3,209)を生成したが、ユーザー評価ではmaps(1,188)が最良。パーツ数はKPIとして不適切。
+  (Process - GREEN maps - HIGH)
+- スキルの時間コスト(2倍)は大規模マップでは空間品質で回収される。小規模では回収されない（前回結論）。→ スケール依存性あり。
+  (Process - GREEN skills - MEDIUM)
+- building-maps Phase 6 が環境設定(Lighting/Atmosphere)を未カバー。Phase 6 の記述が「PointLight/SpotLight追加」と具体的すぎ、AIの視野をインスタンスレベルに制限した。no-skill は自発的にClockTime+Atmosphereを設定。過剰制約の典型例。
+  (Process - RED maps - HIGH)
+- building-3d-objects はマップスケールでオーバーラップ多発。スキルスコープ外の使用であり、ルーティング正当性を再確認。
+  (Geometry - RED 3d-obj - HIGH / expected)
+- 色・マテリアル品質は Design Brief 品質に依存し、スキル有無に無関係。3回連続のA/Bテストで確認。
+  (Materials - GREEN all - HIGH)
+- 全3エージェントで向き違いパーツ発生。マップスケールでの全パーツ orientation audit は非現実的。
+  (Geometry - RED all - MEDIUM)
+
+**Skill updates made:**
+
+- `building-maps/SKILL.md`: Phase 6 記述を拡張 — インスタンス限定の照明指示を削除し、環境設定全般を含む記述に変更
+
+**Open question resolution:**
+
+- "maps のPhase構造簡略化で効率改善?" → **COUNTER-EVIDENCE** — 大規模では Phase 構造が空間バランスに寄与。簡略化はリスク
+- "no-skill効率は Design Brief 薄い場合も一貫?" → **STILL OPEN** — 今回も詳細 Brief 使用
+- "共通バリデーションスクリプトで品質標準化?" → **STILL OPEN** — 両スキルが独自に0エラー達成。共通化の緊急性低い
+- "Origin anchor が空間精度を改善?" → **WEAKLY VALIDATED** — maps(anchor有)が最良バランスだが Phase 構造との交絡あり
+- "Map Mode を Object Mode オーケストレーションに?" → **STILL OPEN** — 未検証
+
+**Open questions (LOW confidence - validate in future sessions):**
+
+- スキル優位のスケール閾値はどこか？ 100×100ではno-skill優位、500+ではmaps優位。200-400の中間スケールではどうか？
+- building-maps Phase 6 の環境設定拡張後、次回マップビルドでAIが自発的にLighting/Atmosphere設定を行うか？
+- マップスケールでの向き違いパーツ: ランドマーク(納屋、風車等)のみのスポットチェック検証は有効か？
+- Design Brief の品質が色・マテリアルの唯一の決定要因という結論は、曖昧な色指定(e.g.「暖かい感じ」)でも成立するか？
+
+## 2026-02-28 - TropicalResortPark A/B/C Test (Maps vs 3DObj vs NoSkill)
+
+**Goal:** 同一 Design Brief (100×100 リゾート風トロピカル公園) を 3 条件で並列構築し、スキル効果を比較
+**Process:** Design Brief → 3 サブエージェント並列起動 (building-maps / building-3d-objects / no-skill)
+**Outcome:** SUCCESS (比較完了) — no-skill が効率・品質で優位、maps が階層で優位、3d-obj はスコープ不適合
+
+| 指標 | A: building-maps | B: building-3d-objects | C: no-skill |
+|------|:---:|:---:|:---:|
+| Parts | 152 | 156 | **181** |
+| MCP calls | 14 | 14 | **9** |
+| Duration (ms) | 197,529 | 175,845 | **154,693** |
+| Tokens | 51,309 | 26,691 | 46,146 |
+| Folders/Models | **26** | 0 | 22 |
+| Below-floor | 6 | 4 | **2** |
+| Default color | 1 | **0** | **0** |
+| Components 8/8 | **8/8** | 7/8 | **8/8** |
+| PointLights | 5 | 5 | 5 |
+| Bounding box | 100×100 ✓ | 100×100 ✓ | 100×100 ✓ |
+
+**Key findings:**
+
+- Maps skill hierarchy is clearly superior: zone-based folders (Terrain/, Landmarks/, Zone_NE/, Zone_SW/, Props/, Lighting/). This validates the Japanese Garden A/B finding about folder organization.
+  (Process - GREEN maps - HIGH)
+- building-3d-objects produced 156 flat parts with zero hierarchy. Expected: skill is scoped for single Models, not map-scale. This validates correct routing behavior.
+  (Process - RED 3d-obj - HIGH)
+- No-skill was most efficient: 9 MCP calls (vs 14 for both skills), fastest completion (155s), most parts (181), best quality metrics (2 below-floor, 0 default color). Skill reading overhead + phased approach added ~40-50s and 5 extra calls.
+  (Process - GREEN no-skill - HIGH)
+- Maps skill had worst quality: 6 below-floor parts, 1 default color. Root cause: Post-Build Verification is a verbal checklist, not an automated validation script like building-3d-objects' validate.luau.
+  (Geometry - RED maps - HIGH)
+- No-skill produced richest flower garden: 30 flowers (65 parts) vs 18 flowers (~41 parts) from both skill agents. Without phase constraints, more token budget went to decorative detail.
+  (Design - GREEN no-skill - MEDIUM)
+- All 3 agents achieved exact 100×100 bounding box and all specified components. Design Brief's explicit RGB values, material names, and dimensions were sufficient to prevent specification errors regardless of skill.
+  (Process - GREEN all - HIGH)
+
+**Skill updates made:**
+
+- `building-maps/SKILL.md`: Added automated validation script reference to Phase 6 Post-Build Verification
+- Session log only: no-skill efficiency finding (observational, no anti-pattern to write)
+
+**Open question resolution:**
+
+- Kitchen A/B: "Does no-skill outperform skill at spatial layout?" → **PARTIALLY VALIDATED** — no-skill outperformed on efficiency and quality metrics for outdoor park with detailed Design Brief. Hierarchy was the only gap.
+- Japanese Garden A/B: "Sub-folder organization significantly better with skill" → **RE-VALIDATED** — maps skill again produced best hierarchy (26 folders vs 22 models vs 0)
+- Japanese Garden A/B: "Should Map Mode be re-thought as 'orchestrate multiple Object Mode builds'?" → **STILL OPEN** — maps skill used phased approach, not sub-build orchestration
+- Conference rooms: "Does Post-Build Gate verification code actually get executed?" → **PARTIALLY ADDRESSED** — 3d-obj agent ran validate.luau; maps and no-skill did not have equivalent
+
+**Open questions (LOW confidence - validate in future sessions):**
+
+- Does building-maps' efficiency improve if its Phase structure is simplified (fewer mandatory phases) for well-specified Design Briefs?
+- Is the no-skill efficiency advantage consistent across less-detailed prompts (vague user requests without Design Brief)?
+- Would a shared validation script (used by both building-maps and building-3d-objects) standardize quality across skills?
+- The maps skill's Origin anchor pattern (invisible part at center) — does it actually improve spatial accuracy vs no anchor?
+
 ## 2026-02-28 - ConferenceRoom 2nd attempt (ルール更新後の再ビルド検証)
 
 **Goal:** 前回反省後にルール更新済みSKILLで再ビルドし、修正効果を確認

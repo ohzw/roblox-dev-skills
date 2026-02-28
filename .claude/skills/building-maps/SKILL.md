@@ -83,8 +83,13 @@ Build towers, fountains, prominent trees, or key structures. These orient the pl
 ### Phase 5: Zone Fill
 Populate zones with props, furniture, and vegetation. Parts per call target: 20–30 per zone.
 
-### Phase 6: Lighting & Spawns
-Add `PointLight` or `SpotLight` sources, and place `SpawnLocation` instances on solid ground. Parts per call target: 5–20.
+### Phase 6: Environment, Lighting & Spawns
+Configure the map's environment and place spawn points. This includes both global settings and local light sources. Parts per call target: 5–20.
+
+**Do not limit yourself to instance-level lights.** Also consider:
+- `Lighting` service properties (ClockTime/TimeOfDay, Ambient, Brightness)
+- `Atmosphere` (Density, Offset, Color, Decay, Glare, Haze)
+- `SpawnLocation` on solid ground
 
 ## Folder Organization
 
@@ -107,8 +112,38 @@ workspace/
 
 ## Post-Build Verification
 
-Run these visual and structural checks before reporting completion:
+After the build is visually complete, run a validation script via `mcp__roblox__run_code`. Adapt the `MAP_ROOT_NAME` variable to your map's folder name.
+
+```lua
+local MAP_ROOT_NAME = "YourMapName" -- AI: Update this
+local root = workspace:FindFirstChild(MAP_ROOT_NAME)
+if not root then print("[ERROR] " .. MAP_ROOT_NAME .. " not found"); return end
+
+local errors, warnings, partCount = 0, 0, 0
+for _, desc in ipairs(root:GetDescendants()) do
+    if desc:IsA("BasePart") then
+        partCount = partCount + 1
+        if not desc.Anchored then
+            print("[ERROR] " .. desc:GetFullName() .. " not Anchored")
+            errors = errors + 1
+        end
+        if desc.Position.Y - desc.Size.Y/2 < -0.5 then
+            print("[WARN] " .. desc.Name .. " below floor Y=" .. string.format("%.1f", desc.Position.Y - desc.Size.Y/2))
+            warnings = warnings + 1
+        end
+        if desc.Color == Color3.new(163/255,162/255,165/255) and desc.Material == Enum.Material.Plastic then
+            print("[WARN] " .. desc.Name .. " uses default color")
+            warnings = warnings + 1
+        end
+    end
+end
+print(string.format("Parts: %d | Errors: %d | Warnings: %d", partCount, errors, warnings))
+```
+
+**Regression loop**: If the script outputs `[ERROR]` or `[WARN]`, fix the issues and re-verify.
+
+Additionally, check these structural properties:
 1. **Traversal**: Is every zone reachable from spawn?
 2. **Scale Check**: Does the environment feel right relative to player size (~5 studs)?
 3. **Hierarchy**: Are all parts parented inside the `MapRoot` folder hierarchy?
-4. **Anchoring**: Are all structural parts `Anchored = true`?
+4. **Anchoring**: Confirmed by the script above.
