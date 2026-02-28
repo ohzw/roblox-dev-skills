@@ -7,7 +7,7 @@ A collection of AI agent skills for building 3D objects and maps in Roblox Studi
 ## Installation
 
 ```bash
-npx skills add <owner>/roblox-dev-skills
+npx skills add ohzw/roblox-dev-skills
 ```
 
 ## Skills

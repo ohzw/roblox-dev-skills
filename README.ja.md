@@ -7,7 +7,7 @@ AI エージェントが Roblox Studio MCP で 3D オブジェクトやマップ
 ## インストール
 
 ```bash
-npx skills add <owner>/roblox-dev-skills
+npx skills add ohzw/roblox-dev-skills
 ```
 
 ## スキル一覧
