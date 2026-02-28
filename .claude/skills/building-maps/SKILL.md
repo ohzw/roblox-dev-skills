@@ -50,7 +50,24 @@ end
 Do not attempt to build a complex map in a single run. Follow these phases sequentially.
 
 ### Phase 1: Layout Planning (Before Coding)
-Analyze the request and define the map boundary, zones, spawn points, key landmarks, and connecting paths.
+When receiving a request to build a map, you MUST strictly follow this evaluation process before writing any code. Words like "spacious(広い)", "western(洋風)", or "cool(かっこいい)" are VAGUE MODIFIERS, not structural requirements.
+
+**Step 1: Force Thinking and Checklist Evaluation**
+Before calling `mcp__roblox__run_code`, you MUST output a `<thinking>` block to evaluate the user's prompt against this Mandatory Checklist:
+1. **[Scale/Scope]** Is the total size defined? (e.g., a 100x100 small arena vs a 2000x2000 city).
+2. **[Gameplay Type]** Is the structural topology defined? (e.g., a flat social lobby vs a vertical parkour obby).
+3. **[Zone Breakdown]** Are the specific areas/zones listed? (e.g., "a town" is invalid. "a town with a spawn plaza, 3 houses, and a shop" is valid).
+
+**Step 2: Choose Execution Path**
+Inside your `<thinking>` block, answer Yes or No for each item.
+
+**CRITICAL RULE**: If ANY item is "No" or "Ambiguous", you MUST STOP. Do NOT proceed to build. Do NOT "reasonably assume" anything. You are FORBIDDEN from guessing the structure.
+
+- **Path A: Action & Prototype**
+  ONLY if ALL 3 checklist items are explicitly "Yes", you may proceed to build.
+- **Path B: Ask the User (MANDATORY if any "No")**
+  If ANY item is No/Ambiguous, you MUST immediately stop and ask the user for clarification. Do NOT write any code. Do NOT read docs. STOP and ASK THE USER.
+  Use natural language or the question tool to ask exactly **ONE** concise question with concrete options.
 
 ### Phase 2: Ground & Boundaries
 Generate the main floor plane(s) and boundary walls. Create the `Origin` anchor part and the `MapRoot` folder hierarchy. Keep parts per call target: 10–20.

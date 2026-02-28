@@ -53,10 +53,16 @@ end
 Follow these phases sequentially. Do not attempt to build a complex object in a single run.
 
 ### Phase 1: Assess (Design & Budget)
-Before writing code, analyze the request:
-- **Style**: Geometric (furniture, buildings) vs Organic (animals, trees).
-- **Scale**: Estimate the bounding box dimensions (Player height is ~5 studs).
-- **Complexity**: Estimate part count. If >20 parts or requires multiple CSG operations, you MUST split the build across multiple `run_code` calls.
+When receiving a request to build an object, quickly evaluate if you have enough structural detail.
+
+**Quick Check:**
+- Do you know the specific components/parts to build? (Not just "kitchen" but "counter, sink, stove, island")  
+- Do you know the approximate scale? (Player-sized? Miniature? Room-scale?)
+- Do you know if it's static or has moving parts?
+
+**Decision:**
+- **If YES to all**: Proceed to Phase 2. Make reasonable assumptions for colors and minor details.
+- **If NO to any**: STOP. Tell the user: "I need more details to build this properly. Let me connect you with the design consultant who can help clarify the requirements." Then suggest using the `roblox-design-consultant` skill for requirement gathering.
 
 ### Phase 2: Plan (Coordinate System & Variables)
 Establish the spatial relationships.
