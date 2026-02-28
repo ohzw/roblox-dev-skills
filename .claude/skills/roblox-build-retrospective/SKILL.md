@@ -7,6 +7,8 @@ description: >
   builds that create or modify Parts, Models, CSG, or map elements via
   mcp__roblox__run_code, and when users request review keywords such as
   "振り返り", "retrospective", "what went wrong", or "analyze the result".
+metadata:
+  internal: true
 ---
 
 # Roblox Build Retrospective

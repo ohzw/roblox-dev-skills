@@ -16,6 +16,8 @@ description: >
 
   Tech stack: jsdotlua/react, ReactRoblox, react-spring (chriscerie/react-spring),
   Luau --!strict, Rojo, Wally.
+metadata:
+  internal: true
 ---
 
 # Roblox UI Mastery Skill

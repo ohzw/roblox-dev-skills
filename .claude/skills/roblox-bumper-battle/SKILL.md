@@ -11,6 +11,8 @@ description: >
   ResponsiveUI, scaleValue, scaleUDim2, getScale, isMobile, getResponsiveWidth,
   Dynamic Offset Scaling, mobile UI size, button too small, text too small, notch overlap,
   IgnoreGuiInset, hardcoded pixel, UDim2 scaling.
+metadata:
+  internal: true
 ---
 
 # Bumper Battle Development Skill
