@@ -8,6 +8,10 @@
     }
   },
   "permission": {
-    "bash": "allow"
+    "bash": "allow",
+    "skill": {
+      "*": "allow",
+      "roblox-design-consultant": "deny"
+    }
   }
 }
