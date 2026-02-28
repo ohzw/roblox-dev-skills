@@ -59,3 +59,27 @@ Always explicitly set these values unless physics interaction is intended:
 - **Origin Processing**: Roblox floating-point precision degrades far from the origin. Perform complex CSG operations near `CFrame.new(0, 0, 0)`, then `PivotTo()` the final Model to its intended location.
 - **No MeshPart CSG**: The GeometryService ONLY supports `Part` and `PartOperation`. Do NOT attempt to use `SubtractAsync` or `UnionAsync` on `MeshPart` or `Terrain`.
 - **Collision Fidelity**: For decorative Unions that players don't need accurate physics for, explicitly set `CollisionFidelity = Enum.CollisionFidelity.Box` to save performance.
+
+## 6. WedgePart Orientation
+
+A `WedgePart`'s taper direction is NOT axis-aligned by default — it requires explicit CFrame rotation, just like `Cylinder`.
+
+**Default behavior**: The zero-height edge (the "tip") points toward **+Z**. Without rotation, a WedgePart used as a blade tip or roof peak will face sideways, not upward.
+
+**To make the tip point UP** (e.g., blade tip, spear head, roof peak):
+```lua
+local tip = Instance.new("WedgePart")
+tip.Size = Vector3.new(0.3, 1.0, 0.3) -- Width, TaperLength, Depth
+-- Rotate -90° around X so the tip points in +Y (upward)
+tip.CFrame = baseCFrame * CFrame.new(0, halfBladeHeight + 0.5, 0) * CFrame.Angles(-math.pi/2, 0, 0)
+```
+
+**Direction table**:
+| Desired tip direction | Required rotation |
+|---|---|
+| +Y (up) | `CFrame.Angles(-math.pi/2, 0, 0)` |
+| -Y (down) | `CFrame.Angles(math.pi/2, 0, 0)` |
+| +Z (forward, default) | no rotation needed |
+| -Z (backward) | `CFrame.Angles(math.pi, 0, 0)` |
+
+**Anti-pattern**: Placing a WedgePart without setting CFrame rotation and assuming it will taper in the correct direction based on Size alone.

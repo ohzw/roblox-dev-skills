@@ -961,3 +961,44 @@ Neither error was caught by existing skill rules. Both are now documented.
 
 - Does bench CFrame offset logic reliably land benches on path surfaces, or does it need per-position Y tuning?
 - Is path gap caused by diagonal length math, or by CFrame rotation origin?
+
+## 2026-03-01 - ElementalSwordCollection A/B Test (building-3d-objects vs no-skill, Variant Set)
+
+**Goal:** 5種属性剣バリアントセット（炎・水・雷・毒・聖）を建設、スキルあり/なしで品質比較
+**Process:** roblox-design-consultant → Design Brief (Variant Set) → 2エージェント並列（building-3d-objects / no-skill）
+**Outcome:** FAILURE (スキルなし優位) — WedgePart向きバグ、デザイン創造性でスキルなしが逆転
+
+| 指標 | WithSkill | WithoutSkill |
+|------|:---------:|:------------:|
+| Parts | 87 | 88 |
+| CSG使用 | SubtractAsync（面取り） | UnionAsync（面取り） |
+| 検証スクリプト | ✅ 実行・エラー0 | ❌ 未実施 |
+| 刀身先端向き | ❌ 横向き（WedgePart回転ミス） | ✅ 正常（上向き） |
+| クロスガード演出 | ❌ 平坦 | ✅ 斜め配置で動的 |
+| 色の細かさ | △ | ✅ より細かい |
+| **ユーザー評価** | **2位** | **1位** |
+
+**Key findings:**
+
+- WedgePart のデフォルト向きがドキュメント未記載。+Z方向にテーパーするため、刀身先端（上向き）にするには明示的なCFrame回転が必要。platform-rules.mdにCylinder向きと同様の記述がなかった。
+  (Geometry - RED - HIGH)
+- 4フェーズ遵守 + 3ドキュメント読み込み + 検証スクリプト実行 の手続きコストにより、エージェントの認知予算がデザイン創造性から手続き遵守にシフト。クロスガードの傾斜演出・色の細かい差分など視覚的工夫がスキルなし側に劣った。
+  (Process - RED - MEDIUM)
+- スキルなし側が CSG ではなくパーツの傾斜配置でクロスガードに動的な視覚効果を出した。CSG面取りより単純なパーツ回転の方が視覚的インパクトが高い場合がある。
+  (Design - RED - MEDIUM)
+- バリアントセットの数値的品質（パーツ数・エラー数）は両者ほぼ同等。ユーザー視覚評価での差は全て「創造的デザイン判断」の差に帰着した。
+  (Process - neutral - HIGH)
+
+**Skill updates made:**
+
+- `building-3d-objects/docs/platform-rules.md`: Section 6「WedgePart Orientation」追加 — デフォルト向き・方向テーブル・アンチパターンを記載
+
+**Open question resolution:**
+
+- "均一品質ルール(DES-037)は不均一な複合物体でも機能するか？" → **WEAKLY VALIDATED** — バリアントセットで両エージェント5/5完成。ただし品質差はデザイン創造性に帰因し、均一性ルールの有効性とは別問題
+
+**Open questions (LOW confidence - validate in future sessions):**
+
+- 手続きコスト（フェーズ遵守・ドキュメント読み込み）が品質に与える影響はオブジェクトの複雑さと相関するか？単純なオブジェクトほどスキルが足を引っ張る仮説。
+- WedgePart向きの修正（platform-rules.md追記）後、次回ビルドで刀身先端が正しく上を向くか検証が必要。
+- スキルの価値が「技術的失敗の防止」に特化しているなら、デザイン創造性への干渉を最小化するためにフェーズ数を減らすことで純粋品質が向上するか？
