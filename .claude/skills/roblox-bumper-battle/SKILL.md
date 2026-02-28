@@ -5,6 +5,8 @@ description: >
   Use when creating or modifying UI components that need design tokens (colors, spacing,
   font sizes, radius) or responsive scaling (Dynamic Offset Scaling).
 
+  NOTE: This skill is kept here for reference but should ideally be part of the project's CLAUDE.md.
+
   Triggers: DesignSystem, DS.colors, DS.spacing, DS.fontSize, DS.radius, DS.font, DS.accent,
   ResponsiveUI, scaleValue, scaleUDim2, getScale, isMobile, getResponsiveWidth,
   Dynamic Offset Scaling, mobile UI size, button too small, text too small, notch overlap,
