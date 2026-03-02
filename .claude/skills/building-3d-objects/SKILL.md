@@ -77,23 +77,6 @@ Establish the spatial relationships.
 
 *Read `docs/spatial-patterns.md` now if either condition applies.*
 
-#### Multi-Object Variant Sets
-
-When building multiple related objects (e.g., "5 bow types", "3 chair styles"):
-
-1. **Before building anything**, define a shared manifest:
-   - Parent Folder name (e.g., `BowCollection`)
-   - Naming pattern for variants
-   - Shared bounding box / scale reference
-   - Construction technique (segment count, CSG approach, part types)
-   - Shared material/color palette
-2. **Build the first variant fully** (Plan → Build → Verify).
-3. **Re-read the first variant from workspace** to establish ground truth.
-   Do not rely on memory — use `FindFirstChild` to read actual sizes/positions.
-4. **Vary only the distinguishing features** per subsequent variant
-   (accent color, proportions, decorative details) while keeping the shared
-   manifest constant.
-
 ### Phase 3: Build (Geometry & CSG)
 Generate the parts.
 
